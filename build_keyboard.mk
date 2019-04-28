@@ -4,19 +4,23 @@
 # responsible for determining which folder is being used and doing the
 # corresponding environment setup.
 
+SILENT ?= false
+
 ifndef VERBOSE
 .SILENT:
 endif
 
 .DEFAULT_GOAL := all
 
-include common.mk
+TOP_DIR ?= .
+
+include $(TOP_DIR)/common.mk
 
 # Set the filename for the final firmware binary
 KEYBOARD_FILESAFE := $(subst /,_,$(KEYBOARD))
 TARGET ?= $(KEYBOARD_FILESAFE)_$(KEYMAP)
 KEYBOARD_OUTPUT := $(BUILD_DIR)/obj_$(KEYBOARD_FILESAFE)
-STM32_PATH := quantum/stm32
+STM32_PATH := $(QUANTUM_PATH)/stm32
 
 # Force expansion
 TARGET := $(TARGET)
@@ -51,11 +55,11 @@ KEYBOARD_FOLDER_3 := $(notdir $(KEYBOARD_FOLDER_PATH_3))
 KEYBOARD_FOLDER_4 := $(notdir $(KEYBOARD_FOLDER_PATH_4))
 KEYBOARD_FOLDER_5 := $(notdir $(KEYBOARD_FOLDER_PATH_5))
 KEYBOARD_PATHS :=
-KEYBOARD_PATH_1 := keyboards/$(KEYBOARD_FOLDER_PATH_1)
-KEYBOARD_PATH_2 := keyboards/$(KEYBOARD_FOLDER_PATH_2)
-KEYBOARD_PATH_3 := keyboards/$(KEYBOARD_FOLDER_PATH_3)
-KEYBOARD_PATH_4 := keyboards/$(KEYBOARD_FOLDER_PATH_4)
-KEYBOARD_PATH_5 := keyboards/$(KEYBOARD_FOLDER_PATH_5)
+KEYBOARD_PATH_1 := $(TOP_DIR)/keyboards/$(KEYBOARD_FOLDER_PATH_1)
+KEYBOARD_PATH_2 := $(TOP_DIR)/keyboards/$(KEYBOARD_FOLDER_PATH_2)
+KEYBOARD_PATH_3 := $(TOP_DIR)/keyboards/$(KEYBOARD_FOLDER_PATH_3)
+KEYBOARD_PATH_4 := $(TOP_DIR)/keyboards/$(KEYBOARD_FOLDER_PATH_4)
+KEYBOARD_PATH_5 := $(TOP_DIR)/keyboards/$(KEYBOARD_FOLDER_PATH_5)
 
 ifneq ("$(wildcard $(KEYBOARD_PATH_5)/)","")
     KEYBOARD_PATHS += $(KEYBOARD_PATH_5)
@@ -118,8 +122,12 @@ else ifneq ("$(wildcard $(MAIN_KEYMAP_PATH_1)/keymap.c)","")
     -include $(MAIN_KEYMAP_PATH_1)/rules.mk
     KEYMAP_C := $(MAIN_KEYMAP_PATH_1)/keymap.c
     KEYMAP_PATH := $(MAIN_KEYMAP_PATH_1)
+else ifneq ("$(wildcard keymap.c)","")
+		-include rules.mk
+		KEYMAP_C := keymap.c
+		KEYMAP_PATH := .
 else ifneq ($(LAYOUTS),)
-    include build_layout.mk
+    include $(TOP_DIR)/build_layout.mk
 else
     $(error Could not find keymap)
     # this state should never be reached
@@ -139,7 +147,7 @@ ifneq ($(FORCE_LAYOUT),)
     TARGET := $(TARGET)_$(FORCE_LAYOUT)
 endif
 
-include quantum/mcu_selection.mk
+include $(QUANTUM_PATH)/mcu_selection.mk
 
 ifdef MCU_FAMILY
     OPT_DEFS += -DQMK_STM32
@@ -306,7 +314,7 @@ PROJECT_CONFIG := $(CONFIG_H)
 ifeq ("$(USER_NAME)","")
     USER_NAME := $(KEYMAP)
 endif
-USER_PATH := users/$(USER_NAME)
+USER_PATH := $(TOP_DIR)/users/$(USER_NAME)
 
 -include $(USER_PATH)/rules.mk
 ifneq ("$(wildcard $(USER_PATH)/config.h)","")
@@ -338,10 +346,10 @@ VPATH += $(KEYBOARD_PATHS)
 VPATH += $(COMMON_VPATH)
 VPATH += $(USER_PATH)
 
-include common_features.mk
+include $(TOP_DIR)/common_features.mk
 include $(TMK_PATH)/protocol.mk
 include $(TMK_PATH)/common.mk
-include bootloader.mk
+include $(TOP_DIR)/bootloader.mk
 
 SRC += $(patsubst %.c,%.clib,$(QUANTUM_LIB_SRC))
 SRC += $(TMK_COMMON_SRC)
@@ -393,5 +401,5 @@ all: build check-size
 build: elf cpfirmware
 check-size: build
 
-include show_options.mk
+include $(TOP_DIR)/show_options.mk
 include $(TMK_PATH)/rules.mk
